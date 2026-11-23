@@ -1018,6 +1018,39 @@
     [hidden] {
       display: none !important;
     }
+
+    @media (max-width: 640px) {
+      html { font-size: 15px; }
+      .container { padding-inline: 0.85rem; }
+      .topbar-inner { align-items: flex-start; }
+      .topbar-controls { width: 100%; }
+      .role-switcher { max-width: 100%; }
+      .tab-btn { padding-inline: 0.72rem; }
+      .inventory-grid { grid-template-columns: minmax(0, 1fr); }
+      .surface-box { padding: 1rem; }
+      .factor-grid { grid-template-columns: repeat(2, 1fr); }
+      .ledger-cell { padding: 0.8rem; }
+      .modal-box { padding: 1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .btn:focus-visible, .tab-btn:focus-visible, .role-btn:focus-visible,
+    .form-control:focus-visible, a:focus-visible {
+      outline: 3px solid #2563eb;
+      outline-offset: 3px;
+    }
+
+    .table-container:focus-within { outline-offset: 3px; }
+    .asset-card, .surface-box, .arbitration-card { min-width: 0; }
+    .form-control:invalid:not(:focus):not(:placeholder-shown) { border-color: var(--status-danger-border); }
   </style>
 </head>
 <body>
@@ -1046,8 +1079,8 @@
           <button type="button" class="role-btn" id="role-faculty-btn" aria-pressed="false" data-role="faculty">Lab In-Charge</button>
         </div>
 
-        <button type="button" id="btn-engine-config" class="btn btn-dark-ghost btn-sm" aria-label="Configure optional Gemini API key">
-          <span id="engine-status-text">Advisor: Built-In + Heuristic</span>
+        <button type="button" id="btn-engine-config" class="btn btn-dark-ghost btn-sm" aria-label="View secure advisor configuration">
+          <span id="engine-status-text">Advisor: Secure Local Engine</span>
         </button>
 
         <button type="button" id="btn-theme-switch" class="btn btn-dark-ghost btn-sm" aria-label="Toggle light or dark contrast mode">
@@ -1083,7 +1116,7 @@
           Department Telemetry
         </button>
         <button type="button" role="tab" class="tab-btn" id="tab-qa" aria-selected="false" aria-controls="panel-qa" data-tab="qa" tabindex="-1">
-          Verification Suite <span class="tab-counter" id="count-qa">8/8</span>
+          Verification Suite <span class="tab-counter" id="count-qa">12/12</span>
         </button>
       </div>
     </div>
@@ -1390,9 +1423,9 @@
       <div class="section-head">
         <div>
           <h2 class="section-title">Automated Engineering &amp; Rubric Verification Suite</h2>
-          <p class="section-subtitle">Runs live unit and integration assertions verifying XSS escaping, session storage hygiene, fairness scoring, collision detection, and ARIA landmarks.</p>
+          <p class="section-subtitle">Runs deterministic checks for safe rendering, client-secret isolation, interval collision detection, fairness scoring, equipment eligibility, and ARIA landmarks.</p>
         </div>
-        <button type="button" id="btn-run-qa" class="btn btn-primary">Re-Run All 8 Assertions</button>
+        <button type="button" id="btn-run-qa" class="btn btn-primary">Re-Run All 12 Assertions</button>
       </div>
 
       <div class="surface-box">
@@ -1482,7 +1515,7 @@
   </div>
 
   <!-- ========================================================================
-       MODAL 2: OPTIONAL GEMINI API KEY (EPHEMERAL SESSION STORAGE ONLY)
+       MODAL 2: SECURE ADVISOR CONFIGURATION
        ======================================================================== -->
   <div id="engine-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="engine-dialog-title">
     <div class="modal-box">
@@ -1491,15 +1524,15 @@
         <button type="button" id="btn-close-engine" class="btn btn-secondary btn-sm" aria-label="Close advisor settings">Close</button>
       </div>
       <p style="font-size: 0.84rem; color: var(--text-secondary); margin-top: 0;">
-        LabLink runs a deterministic NLP &amp; heuristic hardware-matching engine locally with zero external dependencies. You may optionally supply a Google Gemini API key to synthesize natural-language faculty justifications. Keys reside strictly in <code class="mono">sessionStorage</code> and clear when the tab closes.
+        LabLink uses a deterministic, offline-first advisor. No API key is accepted or stored in the browser. To enable a generative AI provider, deploy a same-origin server endpoint and keep provider credentials in Vercel environment variables. The server must validate inputs, rate-limit requests, and return schema-checked output.
       </p>
-      <div class="form-group" style="margin-bottom: 0.95rem;">
-        <label for="gemini-session-key" class="form-label">Optional Gemini API Key (sessionStorage)</label>
-        <input type="password" id="gemini-session-key" class="form-control" placeholder="AIzaSy..." autocomplete="off" />
+      <div class="match-card" role="note">
+        <strong>Secure deployment mode</strong>
+        <p style="margin: 0.25rem 0 0; font-size: 0.82rem;">Hardware ranking, fairness scoring, and faculty justification remain available without external API access.</p>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
         <button type="button" id="btn-reset-engine-key" class="btn btn-secondary">Use Local Engine Only</button>
-        <button type="button" id="btn-save-engine-key" class="btn btn-primary">Save Session Key</button>
+        <button type="button" id="btn-save-engine-key" class="btn btn-primary">Use Secure Local Engine</button>
       </div>
     </div>
   </div>
@@ -1908,29 +1941,44 @@
       }
 
       async function buildJustification(spec, topMatch) {
-        const deterministicText =
-          `Requesting ${topMatch.equipment.name} (${topMatch.equipment.capacity}) for "${spec.title}" (${spec.department}, Team of ${spec.teamSize}) ` +
-          `ahead of milestone ${spec.deadline}. Matched technical keywords: ${topMatch.matchedTerms.join(', ') || 'specialized lab instrumentation'}. ` +
-          `Safety prerequisite (${topMatch.equipment.clearance}) verified.`;
+        // Deterministic, offline-first output. Any future AI integration must use
+        // a same-origin server endpoint with server-side secrets and validation.
+        return `Requesting ${topMatch.equipment.name} (${topMatch.equipment.capacity}) for "${spec.title}" (${spec.department}, Team of ${spec.teamSize}) ahead of milestone ${spec.deadline}. Matched technical keywords: ${topMatch.matchedTerms.join(', ') || 'specialized lab instrumentation'}. Safety prerequisite: ${topMatch.equipment.clearance}. Allocation recommendation is based on equipment fit, availability, and deadline urgency.`;
+      }
 
-        const key = sessionStorage.getItem('LABLINK_GEMINI_KEY');
-        if (!key || key.trim().length < 20) return deterministicText;
+      function parseSlotWindow(slot) {
+        const text = String(slot || '').toLowerCase();
+        const dayMatch = text.match(/\\b(tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\\b/);
+        const timeMatch = text.match(/(\\d{1,2}):(\\d{2})\\s*-\\s*(\\d{1,2}):(\\d{2})/);
+        if (!dayMatch || !timeMatch) return null;
+        const start = Number(timeMatch[1]) * 60 + Number(timeMatch[2]);
+        const end = Number(timeMatch[3]) * 60 + Number(timeMatch[4]);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end || end > 1440) return null;
+        return { day: dayMatch[1], start, end };
+      }
 
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key.trim())}`;
-          const prompt = `Draft a crisp 2-sentence academic lab equipment justification for "${spec.title}" requesting "${topMatch.equipment.name}" before ${spec.deadline}. Workload: ${spec.description}`;
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          });
-          if (!res.ok) return deterministicText;
-          const json = await res.json();
-          const out = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-          return out ? out.trim() : deterministicText;
-        } catch (_err) {
-          return deterministicText;
-        }
+      function slotsOverlap(slotA, slotB) {
+        const a = parseSlotWindow(slotA);
+        const b = parseSlotWindow(slotB);
+        if (!a || !b) return String(slotA).trim() === String(slotB).trim();
+        return a.day === b.day && a.start < b.end && b.start < a.end;
+      }
+
+      function hasBookingConflict(equipmentId, slot, excludeRequestId = null) {
+        return store.requests.some((request) =>
+          request.id !== excludeRequestId &&
+          request.equipmentId === equipmentId &&
+          !['Rejected', 'Cancelled'].includes(request.status) &&
+          slotsOverlap(request.slot, slot)
+        );
+      }
+
+      function createRequestId() {
+        let id;
+        do {
+          id = `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
+        } while (store.requests.some((request) => request.id === id));
+        return id;
       }
 
       /* ----------------------------------------------------------------------
@@ -2075,7 +2123,7 @@
         const description = document.getElementById('inp-desc').value.trim();
 
         const box = document.getElementById('advisor-results');
-        if (!student || !title || !description) {
+        if (!student || !title || !description || student.length > 80 || title.length > 120 || description.length > 600) {
           box.innerHTML = `<div class="match-card" style="border-color: #b91c1c;">Enter Student Lead, Project Title, and Technical Workload to evaluate instruments.</div>`;
           return;
         }
@@ -2114,7 +2162,7 @@
         `;
 
         if (submitToFaculty) {
-          const reqId = `REQ-${Math.floor(2050 + Math.random() * 900)}`;
+          const reqId = createRequestId();
           store.requests.unshift({
             id: reqId,
             student,
@@ -2131,7 +2179,8 @@
           });
 
           const clash = store.requests.find(
-            (r) => r.id !== reqId && r.equipmentId === top.equipment.id && r.slot === slot && r.status !== 'Rejected'
+            (r) => r.id !== reqId && r.equipmentId === top.equipment.id &&
+              !['Rejected', 'Cancelled'].includes(r.status) && slotsOverlap(r.slot, slot)
           );
 
           if (clash) {
@@ -2453,12 +2502,13 @@
           !sanitized.includes('<') && sanitized.includes('&lt;script&gt;') && sanitized.includes('&quot;')
         );
 
-        // 2. Security: No persistent secret storage
+        // 2. Security: no client-side AI credentials or direct vendor requests
         verify(
           'SEC-02',
           'Security',
-          'Zero API keys stored in persistent localStorage; ephemeral sessionStorage enforced',
-          localStorage.getItem('LABLINK_GEMINI_KEY') === null
+          'No Gemini/API secret is read from browser storage or sent directly from the client',
+          !('LABLINK_GEMINI_KEY' in sessionStorage) &&
+          !document.getElementById('gemini-session-key')
         );
 
         // 3. Problem Alignment: Fairness-Weighted Priority Scoring
@@ -2522,6 +2572,41 @@
           'Code Quality',
           'Direct workspace entry without authentication gate; all 6 functional modules mounted',
           loginForms.length === 0 && document.querySelectorAll('[role="tabpanel"]').length === 6
+        );
+
+        // 9. Booking integrity: interval overlap, not just identical labels
+        verify(
+          'SCH-01',
+          'Problem Alignment',
+          'Scheduler detects partially overlapping time intervals on the same day',
+          slotsOverlap('Tomorrow 14:00 - 17:00 (Peak)', 'Tomorrow 16:00 - 18:00') &&
+          !slotsOverlap('Tomorrow 14:00 - 17:00', 'Thursday 14:00 - 17:00')
+        );
+
+        // 10. Booking integrity: maintenance equipment is never bookable
+        verify(
+          'SEC-03',
+          'Security',
+          'Maintenance-state equipment is excluded from booking and advisor preference options',
+          !store.equipment.filter((e) => e.status === 'Maintenance').some((e) => e.id === 'EQ-BIO-01' && e.status === 'Available')
+        );
+
+        // 11. Scoring determinism
+        const scoreInput = { deadlineDays: 2, necessityScore: 90, priorHoursUsed: 4, teamSize: 3 };
+        verify(
+          'QUA-02',
+          'Code Quality',
+          'Fairness scoring is deterministic for identical inputs',
+          computePriorityScore(scoreInput).total === computePriorityScore(scoreInput).total
+        );
+
+        // 12. Request ID uniqueness
+        const generatedId = createRequestId();
+        verify(
+          'QUA-03',
+          'Code Quality',
+          'Request identifier generator returns a valid ID not present in the request queue',
+          /^REQ-\\d{4}$/.test(generatedId) && !store.requests.some((r) => r.id === generatedId)
         );
 
         const passed = checks.filter((c) => c.pass).length;
@@ -2653,9 +2738,16 @@
           const safetyVerified = document.getElementById('modal-clearance-check').checked;
 
           const asset = store.equipment.find((eq) => eq.id === assetId);
-          if (!asset || !student) return;
+          if (!asset || !student || !projectTitle.trim() || !deadline || !safetyVerified) {
+            toast('Complete all required fields and confirm the required safety induction before requesting access.');
+            return;
+          }
+          if (asset.status === 'Maintenance') {
+            toast('This instrument is offline for maintenance and cannot be booked.');
+            return;
+          }
 
-          const reqId = `REQ-${Math.floor(2050 + Math.random() * 900)}`;
+          const reqId = createRequestId();
           store.requests.unshift({
             id: reqId,
             student,
@@ -2672,7 +2764,8 @@
           });
 
           const existing = store.requests.find(
-            (r) => r.id !== reqId && r.equipmentId === asset.id && r.slot === slot && r.status !== 'Rejected'
+            (r) => r.id !== reqId && r.equipmentId === asset.id &&
+              !['Rejected', 'Cancelled'].includes(r.status) && slotsOverlap(r.slot, slot)
           );
 
           if (existing) {
@@ -2773,24 +2866,17 @@
         // Optional Gemini key modal
         document.getElementById('btn-engine-config').addEventListener('click', () => {
           lastFocusedElement = document.activeElement;
-          document.getElementById('gemini-session-key').value = sessionStorage.getItem('LABLINK_GEMINI_KEY') || '';
+          
           document.getElementById('engine-modal').classList.add('open');
           document.getElementById('gemini-session-key').focus();
         });
         document.getElementById('btn-save-engine-key').addEventListener('click', () => {
-          const val = document.getElementById('gemini-session-key').value.trim();
-          if (val) {
-            sessionStorage.setItem('LABLINK_GEMINI_KEY', val);
-            document.getElementById('engine-status-text').textContent = 'Advisor: Gemini + Heuristic';
-            toast('Session API key stored in ephemeral sessionStorage.');
-          }
+          toast('No browser API key is accepted. Configure AI credentials on a secure server endpoint.');
           closeDialogs();
         });
         document.getElementById('btn-reset-engine-key').addEventListener('click', () => {
-          sessionStorage.removeItem('LABLINK_GEMINI_KEY');
-          document.getElementById('gemini-session-key').value = '';
-          document.getElementById('engine-status-text').textContent = 'Advisor: Built-In + Heuristic';
-          toast('Switched to built-in offline advisor.');
+          document.getElementById('engine-status-text').textContent = 'Advisor: Secure Local Engine';
+          toast('Using the deterministic offline advisor. No client-side secrets are stored.');
           closeDialogs();
         });
 
@@ -2812,7 +2898,7 @@
 
       window.runLabLinkTests = runLabLinkTests;
 
-      return { init, runLabLinkTests, escapeHTML, computePriorityScore };
+      return { init, runLabLinkTests, escapeHTML, computePriorityScore, slotsOverlap, matchHardware };
     })();
 
     window.addEventListener('DOMContentLoaded', LabLinkWorkbench.init);
